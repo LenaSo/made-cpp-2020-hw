@@ -15,16 +15,25 @@ uint64_t convertToUint64 (double number) {
 }
 
 bool getBit (const uint64_t number, const uint8_t index) {
-    /// Your code here...
+    uint64_t mask = (uint64_t)(1) << index;
+    return (number & mask) >> index;
 }
 
+uint64_t sign_part(const uint64_t number) {
+    return number & ((uint64_t)(1) << 63);
+}
+
+bool isNormalized(const uint64_t number) {
+    uint64_t exp = number & 0x7FF0000000000000;
+    return exp != 0 && exp != 0x7FF0000000000000;
+}
 
 /**
  * Checkers here:
  */
 
 bool checkForPlusZero (uint64_t number) {
-    /// Your code here.
+    return number == 0;
 }
 
 bool checkForMinusZero (uint64_t number) {
@@ -32,35 +41,36 @@ bool checkForMinusZero (uint64_t number) {
 }
 
 bool checkForPlusInf (uint64_t number) {
-    /// Your code here.
+    return number == 0x7FF0000000000000;
 }
 
 bool checkForMinusInf (uint64_t number) {
-    /// Your code here.
+    return number == 0xFFF0000000000000;
 }
 
 bool checkForPlusNormal (uint64_t number) {
-    /// Your code here.
+    return (sign_part(number) == 0) && isNormalized(number);
 }
 
 bool checkForMinusNormal (uint64_t number) {
-    /// Your code here.
+    return (sign_part(number) > 0) && isNormalized(number);
 }
 
 bool checkForPlusDenormal (uint64_t number) {
-    /// Your code here.
+    return number <= 0xFFFFFFFFFFFFF; 
 }
 
 bool checkForMinusDenormal (uint64_t number) {
-    /// Your code here.
+    uint64_t sign = sign_part(number);
+    return (sign > 0) && checkForPlusDenormal(number - sign);
 }
 
 bool checkForSignalingNan (uint64_t number) {
-    /// Your code here.
+    return ((number & 0x7FF8000000000000) == 0x7FF0000000000000) && ((number & 0x7FFFFFFFFFFFF) > 0);
 }
 
 bool checkForQuietNan (uint64_t number) {
-    /// Your code here.
+    return (number & 0x7FF8000000000000) == 0x7FF8000000000000;
 }
 
 
