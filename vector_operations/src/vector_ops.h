@@ -64,7 +64,7 @@ namespace task {
 
     bool operator&&(const std::vector<double> &a, const std::vector<double> &b) {
         const double EPS = 1e-7;
-        if ((a * a) < EPS * EPS) {
+        if ((a * a) < EPS * EPS || (b * b) < EPS * EPS) {
             return true;
         }
         return (a * b > 0 && (a || b));
