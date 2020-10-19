@@ -53,7 +53,15 @@ namespace task {
         return out;
     }
 
+    bool isZero(const std::vector<double> &a) {
+        const double EPS = 1e-7;
+        return ((a * a) < EPS * EPS);
+    }
+
     bool operator||(const std::vector<double> &a, const std::vector<double> &b) {
+        if (isZero(a) || isZero(b)) {
+            return true;
+        }
         double ab2 = a * b;
         ab2 *= ab2;
         double a2b2 = (a * a) * (b * b);
@@ -63,8 +71,7 @@ namespace task {
     }
 
     bool operator&&(const std::vector<double> &a, const std::vector<double> &b) {
-        const double EPS = 1e-7;
-        if ((a * a) < EPS * EPS || (b * b) < EPS * EPS) {
+        if (isZero(a) || isZero(b)) {
             return true;
         }
         return (a * b > 0 && (a || b));
