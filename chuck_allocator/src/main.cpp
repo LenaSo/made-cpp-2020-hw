@@ -13,7 +13,7 @@ int main() {
     alloc.destroy(p);
 
     auto alloc2 = alloc;
-    ChunkAllocator<A> alloc3(100);
+    ChunkAllocator<A> alloc3;
     alloc3 = alloc2;
 
     std::vector<A, ChunkAllocator<A>> vec(1500, A(0, 0));

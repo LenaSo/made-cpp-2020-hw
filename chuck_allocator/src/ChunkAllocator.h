@@ -33,10 +33,21 @@ public:
 
 template<typename T>
 class ChunkAllocator {
+public:
+    using value_type = T;
+    using pointer = T *;
+    using const_pointer = const T *;
+    using reference = T &;
+    using const_reference = const T &;
+    using size_type = std::size_t;
+    using difference_type = std::ptrdiff_t;
+    template<class U> struct rebind {
+        typedef ChunkAllocator<U> other;
+    };
 private:
-    size_t chunkSize_;
+    static const size_type CHANK_SIZE = 128 * 1024; // bytes
     Chunk *chunkHead_;
-    size_t *copyCnt_;
+    size_type *copyCnt_;
 
     void clearDynamicData() {
         if (*copyCnt_) {
@@ -52,24 +63,10 @@ private:
     }
 
 public:
-    using value_type = T;
-    using pointer = T *;
-    using const_pointer = const T *;
-    using reference = T &;
-    using const_reference = const T &;
-    using size_type = std::size_t;
-    using difference_type = std::ptrdiff_t;
-    using propagate_on_container_move_assignment = std::false_type;
-    template<class U> struct rebind {
-        typedef ChunkAllocator<U> other;
-    };
-    using is_always_equal = std::is_empty<ChunkAllocator<T>>;
-
-    ChunkAllocator(const size_t chunkSize = 1024) :
-            chunkSize_(chunkSize * sizeof(T)), chunkHead_(nullptr), copyCnt_(new size_t{0}) {}
+    ChunkAllocator() : chunkHead_(nullptr), copyCnt_(new size_type{0})
+    {}
 
     ChunkAllocator(const ChunkAllocator<T> &copy) :
-            chunkSize_(copy.chunkSize_),
             chunkHead_(copy.chunkHead_),
             copyCnt_(copy.copyCnt_) {
         ++(*copyCnt_);
@@ -79,45 +76,52 @@ public:
         if (this == &copy)
             return *this;
         clearDynamicData();
-        chunkSize_ = copy.chunkSize_;
         chunkHead_ = copy.chunkHead_;
         copyCnt_ = copy.copyCnt_;
         ++(*copyCnt_);
+    }
+
+    bool operator==(const ChunkAllocator<T> &other) const {
+        if (this == other)
+            return true;
+        if (!this->chunkHead_)
+            return false;
+        return (this->chunkHead_ == other.chunkHead_);
     }
 
     ~ChunkAllocator() {
         clearDynamicData();
     }
 
-    T *allocate(const size_t n) {
-        size_t needBytes = n * sizeof(T);
-        if (needBytes > chunkSize_) {
+    pointer allocate(const size_type n) {
+        size_type needBytes = n * sizeof(T);
+        if (needBytes > CHANK_SIZE) {
             chunkHead_ = new Chunk(needBytes, chunkHead_);
             char *memPtr = chunkHead_->allocate(needBytes);
-            return reinterpret_cast<T *>(memPtr);
+            return reinterpret_cast<pointer>(memPtr);
         }
         if (!chunkHead_) {
-            chunkHead_ = new Chunk(chunkSize_, chunkHead_);
+            chunkHead_ = new Chunk(CHANK_SIZE, chunkHead_);
         }
         char *memPtr = nullptr;
         for (Chunk *chunk = chunkHead_; nullptr != chunk && nullptr == memPtr; chunk = chunk->next()) {
             memPtr = chunk->allocate(needBytes);
         }
         if (!memPtr) {
-            chunkHead_ = new Chunk(chunkSize_, chunkHead_);
+            chunkHead_ = new Chunk(CHANK_SIZE, chunkHead_);
             memPtr = chunkHead_->allocate(needBytes);
         }
-        return (memPtr) ? reinterpret_cast<T *>(memPtr) : nullptr;
+        return (memPtr) ? reinterpret_cast<pointer>(memPtr) : nullptr;
     }
 
-    void deallocate(T *, const size_t) {}
+    void deallocate(pointer, const size_type) {}
 
     template<typename... Args>
-    void construct(T *p, Args&&... args) {
+    void construct(pointer p, Args&&... args) {
         new(p) T(std::forward<Args>(args)...);
     }
 
-    void destroy(T *p) {
+    void destroy(pointer p) {
         p->~T();
     }
 };
