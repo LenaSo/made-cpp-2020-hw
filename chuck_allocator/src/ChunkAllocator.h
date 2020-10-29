@@ -1,5 +1,6 @@
 #include <cstddef>
 #include <type_traits>
+#include <utility>
 
 class Chunk {
 private:
@@ -58,11 +59,11 @@ public:
     using const_reference = const T &;
     using size_type = std::size_t;
     using difference_type = std::ptrdiff_t;
-    using propagate_on_container_move_assignment = std::true_type;
-    using rebind = struct rebind {
-        typedef ChunkAllocator<T> other;
+    using propagate_on_container_move_assignment = std::false_type;
+    template<class U> struct rebind {
+        typedef ChunkAllocator<U> other;
     };
-    using is_always_equal = std::true_type;
+    using is_always_equal = std::is_empty<ChunkAllocator<T>>;
 
     ChunkAllocator(const size_t chunkSize = 1024) :
             chunkSize_(chunkSize * sizeof(T)), chunkHead_(nullptr), copyCnt_(new size_t{0}) {}
@@ -112,8 +113,8 @@ public:
     void deallocate(T *, const size_t) {}
 
     template<typename... Args>
-    void construct(T *p, const Args &&... args) {
-        new(p) T(args...);
+    void construct(T *p, Args&&... args) {
+        new(p) T(std::forward<Args>(args)...);
     }
 
     void destroy(T *p) {
