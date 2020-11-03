@@ -82,7 +82,7 @@ public:
     }
 
     bool operator==(const ChunkAllocator<T> &other) const {
-        if (this == other)
+        if (this == &other)
             return true;
         if (!this->chunkHead_)
             return false;
